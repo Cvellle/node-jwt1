@@ -2,7 +2,7 @@
   "name": "15tut",
   "version": "1.0.0",
   "description": "MongoDB tutorial",
-  "main": "index.ts",
+  "main": "index.js",
   "scripts": {
     "start": "node",
     "dev": "nodemon"
