@@ -1,0 +1,32 @@
+{
+  "name": "mongo-boilerplate",
+  "version": "1.0.0",
+  "main": "/api/index.ts",
+  "scripts": {
+    "start": "nodemon api/index.ts",
+    "start:prod": "node server.js",
+    "start:dev": "concurrently \"nodemon server.ts --ignore 'client/*'\" \"npm run client\"",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "heroku-postbuild": "cd client && npm install && npm run build",
+    "dev": "nodemon api/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "mongoose": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.17",
+    "concurrently": "^9.1.2",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  }
+}
