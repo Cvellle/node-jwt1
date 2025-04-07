@@ -1,7 +1,7 @@
 import express, { Application } from 'express';
 import mongoose, { ConnectOptions } from 'mongoose';
 import dotenv from 'dotenv';
-import userRoutes from './routes/userRoutes';
+import userRoutes from './api/routes/userRoutes';
 const cors = require("cors");
 
 dotenv.config();
