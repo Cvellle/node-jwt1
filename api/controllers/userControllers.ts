@@ -9,7 +9,7 @@ export const signinUser = async (req, res) => {
     console.log(123, req.body)
     if (!email || !password) return res.status(400).json({ 'message': 'Email and password are required.' });
 
-    const foundUser = await User.findOne({ Email: email }).exec();
+    const foundUser = await User.findOne({ email: email }).exec();
     if (!foundUser) return res.sendStatus(401); //Unauthorized 
     // evaluate password 
     const match = await bcrypt.compare(email, foundUser.password);
