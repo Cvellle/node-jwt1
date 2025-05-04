@@ -21,7 +21,7 @@ export const signinUser = async (req, res) => {
         const accessToken = jwt.sign(
             {
                 "UserInfo": {
-                    "username": foundUser.username,
+                    "email": foundUser.email,
                     "roles": roles
                 }
             },
@@ -29,7 +29,7 @@ export const signinUser = async (req, res) => {
             { expiresIn: '10s' }
         );
         const refreshToken = jwt.sign(
-            { "username": foundUser.username },
+            { "email": foundUser.email },
             process.env.REFRESH_TOKEN_SECRET,
             { expiresIn: '1d' }
         );
