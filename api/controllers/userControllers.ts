@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 export const signinUser = async (req, res) => {
-    const { username, pwd } = req.body;
+    const { username, password } = req.body;
     console.log(123, req.body)
     if (!username || !username) return res.status(400).json({ 'message': 'Username and password are required.' });
 
@@ -14,7 +14,7 @@ export const signinUser = async (req, res) => {
     
     if (!foundUser) return res.sendStatus(401); //Unauthorized 
     // evaluate password 
-    const match = await bcrypt.compare(pwd, foundUser.username);
+    const match = await bcrypt.compare(password, foundUser.username);
     if (match) {
         const roles = Object.values(foundUser.roles).filter(Boolean);
         // create JWTs
