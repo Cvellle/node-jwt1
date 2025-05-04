@@ -6,14 +6,11 @@ const jwt = require('jsonwebtoken');
 
 export const signinUser = async (req, res) => {
     const { email, username, password } = req.body;
-    console.log(123, req.body)
     if (!email || !password) return res.status(400).json({ 'message': 'email and password are required.' });
 
     const foundUser = await User.findOne({ email: email }).exec();
-    res.json({1: req.body,2: foundUser})
-    console.log(223, foundUser);
-    
-    if (!foundUser) return res.sendStatus(401); //Unauthorized 
+        
+    if (!foundUser.email) return res.sendStatus(401); //Unauthorized 
     // evaluate password
     const match = await bcrypt.compare(password, foundUser.password);
     if (match) {
