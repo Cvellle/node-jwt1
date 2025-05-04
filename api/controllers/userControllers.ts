@@ -8,7 +8,7 @@ export const signinUser = async (req, res) => {
     const { email, username, password } = req.body;
     if (!email || !password) return res.status(400).json({ 'message': 'email and password are required.' });
 
-    const foundUser = await User.findOne({ email: email }).exec();
+    const foundUser: any = await User.findOne({ email: email }).exec();
         
     if (!foundUser.email) return res.sendStatus(401); //Unauthorized 
     // evaluate password
