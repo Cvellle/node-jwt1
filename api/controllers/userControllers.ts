@@ -44,7 +44,6 @@ export const signinUser = async (req: any, res: any) => {
       // original
       // const result = await foundUser.save();
       await foundUser.save();
-      res.status(201).json(foundUser);
       // Creates Secure Cookie with refresh token
       res.cookie("jwt", refreshToken, {
         httpOnly: true,
@@ -55,6 +54,7 @@ export const signinUser = async (req: any, res: any) => {
 
       // Send authorization roles and access token to user
       res.json({ roles, accessToken });
+      res.status(201).json(foundUser);
     } else {
       res.sendStatus(401);
     }
@@ -76,3 +76,67 @@ export const createUser = async (
     res.status(500).json({ message: "Error creating user", error: error });
   }
 };
+
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+export const handleRefreshToken = async (req, res) => {
+    const cookies = req.cookies;
+    if (!cookies?.jwt) return res.sendStatus(401);
+    const refreshToken = cookies.jwt;
+
+    const foundUser = await User.findOne({ refreshToken }).exec();
+    if (!foundUser) return res.sendStatus(403); //Forbidden 
+    // evaluate jwt 
+    jwt.verify(
+        refreshToken,
+        process.env.REFRESH_TOKEN_SECRET,
+        (err, decoded) => {
+            if (err || foundUser.username !== decoded.username) return res.sendStatus(403);
+            const roles = Object.values(foundUser.roles);
+            const accessToken = jwt.sign(
+                {
+                    "UserInfo": {
+                        "username": decoded.username,
+                        "roles": roles
+                    }
+                },
+                process.env.ACCESS_TOKEN_SECRET,
+                { expiresIn: '10s' }
+            );
+            res.json({ roles, accessToken })
+        }
+    );
+}
+
+export const handleLogout = async (req, res) => {
+    // On client, also delete the accessToken
+
+    const cookies = req.cookies;
+    if (!cookies?.jwt) return res.sendStatus(204); //No content
+    const refreshToken = cookies.jwt;
+
+    // Is refreshToken in db?
+    const foundUser = await User.findOne({ refreshToken }).exec();
+    if (!foundUser) {
+        res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });
+        return res.sendStatus(204);
+    }
+
+    // Delete refreshToken in db
+    foundUser.refreshToken = '';
+    const result = await foundUser.save();
+    console.log(result);
+
+    res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });
+    res.sendStatus(204);
+}
