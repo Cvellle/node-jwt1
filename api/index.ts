@@ -22,6 +22,7 @@ mongoose.connect(process.env.MONGO_URI as string, {
 
 // Routes
 app.use(cors());
+app.use('/uploads', express.static('uploads'));
 app.use('/api', userRoutes);
 
 // if (process.env.NODE_ENV === "production") {

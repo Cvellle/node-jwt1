@@ -4,8 +4,8 @@ interface IUser extends Document {
   username: string;
   email: string;
   password: string;
-  roles:any;
-  refreshToken:any
+  roles: any;
+  refreshToken: any;
 }
 
 const UserSchema = new Schema(
@@ -28,6 +28,13 @@ const UserSchema = new Schema(
       required: true,
     },
     refreshToken: String,
+    profileImage: {
+      filename: String,
+      path: String,
+      mimetype: String,
+      size: Number,
+      uploadDate: { type: Date, default: Date.now },
+    },
   },
   { timestamps: true }
 );
@@ -42,4 +49,4 @@ const UserSchema = new Schema(
 //   { timestamps: true }
 // );
 
-export default mongoose.model<IUser>('User', UserSchema);
+export default mongoose.model<IUser>("User", UserSchema);

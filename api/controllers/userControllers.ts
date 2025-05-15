@@ -1,9 +1,35 @@
 import { Request, Response } from "express";
 import User from "../models/User";
-const bodyParser = require("body-parser");
+import fs from "fs";
+import path from "path";
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+interface AuthRequest extends Request {
+  user?: any;
+  file?: any;
+}
+
+interface AuthResponse extends Response {
+  user?: any;
+  file?: any;
+  // status: number;
+  // json: any;
+  // send: any;
+  // sendStatus: any;
+  // clearCookie: any;
+  // cookie: any;
+  // redirect: any;
+  // user?: any;
+  // status?: (statusCode: number) => AuthResponse;  
+  // json?: (body: any) => AuthResponse;
+  // send?: (body: any) => AuthResponse;
+  // sendStatus?: (statusCode: number) => AuthResponse;
+  // clearCookie?: (name: string, options?: any) => AuthResponse;
+  // cookie?: (name: string, value: string, options?: any) => AuthResponse;
+  // redirect?: (statusCode: number, url: string) => AuthResponse;
+}
+
 
 export const signinUser = async (req: any, res: any) => {
   try {
@@ -48,7 +74,8 @@ export const signinUser = async (req: any, res: any) => {
       res.cookie("jwt", refreshToken, {
         httpOnly: true,
         secure: true,
-        sameSite: "None",
+        // fixed
+        sameSite: "None" as unknown as boolean | "strict" | "lax" | "none",
         maxAge: 24 * 60 * 60 * 1000,
       });
 
@@ -59,7 +86,7 @@ export const signinUser = async (req: any, res: any) => {
       res.sendStatus(401);
     }
   } catch (err) {
-    console.log('Something went wrong', err);
+    console.log("Something went wrong", err);
   }
 };
 
@@ -77,66 +104,97 @@ export const createUser = async (
   }
 };
 
-
-export const getCurrentUser = async (req, res) => {
+export const getCurrentUser = async (req: AuthRequest, res: AuthResponse) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+  } catch (err: any) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
-export const handleRefreshToken = async (req, res) => {
-    const cookies = req.cookies;
-    if (!cookies?.jwt) return res.sendStatus(401);
-    const refreshToken = cookies.jwt;
+export const handleRefreshToken = async (req: AuthRequest, res: AuthResponse) => {
+  const cookies = req.cookies;
+  if (!cookies?.jwt) return res.sendStatus(401);
+  const refreshToken = cookies.jwt;
 
-    const foundUser = await User.findOne({ refreshToken }).exec();
-    if (!foundUser) return res.sendStatus(403); //Forbidden 
-    // evaluate jwt 
-    jwt.verify(
-        refreshToken,
-        process.env.REFRESH_TOKEN_SECRET,
-        (err, decoded) => {
-            if (err || foundUser.username !== decoded.username) return res.sendStatus(403);
-            const roles = Object.values(foundUser.roles);
-            const accessToken = jwt.sign(
-                {
-                    "UserInfo": {
-                        "username": decoded.username,
-                        "roles": roles
-                    }
-                },
-                process.env.ACCESS_TOKEN_SECRET,
-                { expiresIn: '10s' }
-            );
-            res.json({ roles, accessToken })
-        }
+  const foundUser = await User.findOne({ refreshToken }).exec();
+  if (!foundUser) return res.sendStatus(403); //Forbidden
+  // evaluate jwt
+  // fix types any
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err: any, decoded: any) => {
+    if (err || foundUser.username !== decoded.username)
+      return res.sendStatus(403);
+    const roles = Object.values(foundUser.roles);
+    const accessToken = jwt.sign(
+      {
+        UserInfo: {
+          username: decoded.username,
+          roles: roles,
+        },
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "10s" }
     );
-}
+    res.json({ roles, accessToken });
+  });
+};
 
-export const handleLogout = async (req, res) => {
-    // On client, also delete the accessToken
+export const handleLogout = async (req: AuthRequest, res: Response) => {
+  // On client, also delete the accessToken
 
-    const cookies = req.cookies;
-    if (!cookies?.jwt) return res.sendStatus(204); //No content
-    const refreshToken = cookies.jwt;
+  const cookies = req.cookies;
+  if (!cookies?.jwt) return res?.sendStatus(204); //No content
+  const refreshToken = cookies.jwt;
 
-    // Is refreshToken in db?
-    const foundUser = await User.findOne({ refreshToken }).exec();
-    if (!foundUser) {
-        res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });
-        return res.sendStatus(204);
+  // Is refreshToken in db?
+  const foundUser = await User.findOne({ refreshToken }).exec();
+  if (!foundUser) {
+    res.clearCookie("jwt", { httpOnly: true, sameSite: "None" as unknown as boolean | "strict" | "lax" | "none", secure: true });
+    return res?.sendStatus(204);
+  }
+
+  // Delete refreshToken in db
+  foundUser.refreshToken = "";
+  const result = await foundUser.save();
+  console.log(result);
+
+  res?.clearCookie("jwt", { httpOnly: true, sameSite: "None" as unknown as boolean | "strict" | "lax" | "none", secure: true });
+  res?.sendStatus(204);
+};
+
+export const uploadProfile = async (req: AuthRequest, res: Response) => {
+  const file = req.file;
+  const user = req.user;
+
+  if (!file) {
+    return res.status(400).json({ message: "No file uploaded" });
+  }
+
+  // Delete old profile image (if any)
+  if (user.profileImage?.path) {
+    try {
+      fs.unlinkSync(path.resolve(user.profileImage.path));
+    } catch (err) {
+      console.warn("Old file not found:", err);
     }
+  }
 
-    // Delete refreshToken in db
-    foundUser.refreshToken = '';
-    const result = await foundUser.save();
-    console.log(result);
+  // Update user document
+  user.profileImage = {
+    filename: file.filename,
+    path: file.path,
+    size: file.size,
+    mimetype: file.mimetype,
+    uploadDate: new Date(),
+  };
 
-    res.clearCookie('jwt', { httpOnly: true, sameSite: 'None', secure: true });
-    res.sendStatus(204);
-}
+  await user.save();
+
+  res.status(200).json({
+    message: "Profile image uploaded",
+    profileImage: user.profileImage,
+  });
+};

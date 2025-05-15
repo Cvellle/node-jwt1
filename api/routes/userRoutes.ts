@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { createUser, handleRefreshToken, signinUser } from '../controllers/userControllers';
-import { verifyJWT } from '../middleware/verifyJWT';
-import { getCurrentUser } from '../controllers/userControllers';
-import { handleLogout } from '../controllers/userControllers';
+import { createUser, signinUser } from '../controllers/userControllers';
 
+// import { verifyJWT } from '../middleware/verifyJWT';
+const { getCurrentUser, handleLogout, handleRefreshToken } = require('../controllers/userControllers');
+const {verifyJWT} = require('../middleware/verifyJWT');
 const router = Router();
 
 router.post('/auth/user/signup', createUser);
