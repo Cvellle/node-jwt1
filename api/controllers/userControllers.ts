@@ -13,21 +13,6 @@ interface AuthRequest extends Request {
 interface AuthResponse extends Response {
   user?: any;
   file?: any;
-  // status: number;
-  // json: any;
-  // send: any;
-  // sendStatus: any;
-  // clearCookie: any;
-  // cookie: any;
-  // redirect: any;
-  // user?: any;
-  // status?: (statusCode: number) => AuthResponse;  
-  // json?: (body: any) => AuthResponse;
-  // send?: (body: any) => AuthResponse;
-  // sendStatus?: (statusCode: number) => AuthResponse;
-  // clearCookie?: (name: string, options?: any) => AuthResponse;
-  // cookie?: (name: string, value: string, options?: any) => AuthResponse;
-  // redirect?: (statusCode: number, url: string) => AuthResponse;
 }
 
 
@@ -44,7 +29,7 @@ export const signinUser = async (req: any, res: any) => {
     if (!foundUser) return res.sendStatus(401); //Unauthorized
     // evaluate password
     const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(foundUser.password, salt);
     const match = await bcrypt.compare(password, hashedPassword);
     if (match) {
       const roles = Object.values(foundUser.roles).filter(Boolean);
@@ -80,8 +65,8 @@ export const signinUser = async (req: any, res: any) => {
       });
 
       // Send authorization roles and access token to user
-      res.json({ roles, accessToken });
-      res.status(201).json(foundUser);
+      res.json({ roles, accessToken, refreshToken });
+      // res.status(201).json(foundUser);
     } else {
       res.sendStatus(401);
     }
@@ -138,7 +123,7 @@ export const handleRefreshToken = async (req: AuthRequest, res: AuthResponse) =>
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "10s" }
     );
-    res.json({ roles, accessToken });
+    res.json({ roles, accessToken, refreshToken });
   });
 };
 
